@@ -328,7 +328,10 @@ void StartTask4(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
+    osThreadSuspend(Task3Handle);
+    osDelay(1000);
+    osThreadResume(Task3Handle);
   }
   /* USER CODE END StartTask4 */
 }
