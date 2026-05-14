@@ -269,10 +269,8 @@ void StartTask1(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  volatile uint32_t wait = 50000000;
 	  HAL_GPIO_TogglePin(blueLED_GPIO_Port, blueLED_Pin);
 	  osDelay(1000);
-	  while(wait--);
   }
   /* USER CODE END 5 */
 }
@@ -309,8 +307,10 @@ void StartTask3(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	  volatile uint32_t wait = 50000000;
 	  HAL_GPIO_TogglePin(orangeLED_GPIO_Port, orangeLED_Pin);
 	  osDelay(200);
+	  while(wait--);
   }
   /* USER CODE END StartTask3 */
 }

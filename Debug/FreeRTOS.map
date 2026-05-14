@@ -4276,14 +4276,14 @@ LOAD E:/Softwares/STM32CubeIDE_1.13.1/STM32CubeIDE/plugins/com.st.stm32cube.ide.
  .text.MX_GPIO_Init
                 0x000000000800062c       0x88 ./Core/Src/main.o
  .text.StartTask1
-                0x00000000080006b4       0x34 ./Core/Src/main.o
+                0x00000000080006b4       0x20 ./Core/Src/main.o
                 0x00000000080006b4                StartTask1
  .text.StartTask2
-                0x00000000080006e8       0x20 ./Core/Src/main.o
-                0x00000000080006e8                StartTask2
+                0x00000000080006d4       0x20 ./Core/Src/main.o
+                0x00000000080006d4                StartTask2
  .text.StartTask3
-                0x0000000008000708       0x20 ./Core/Src/main.o
-                0x0000000008000708                StartTask3
+                0x00000000080006f4       0x34 ./Core/Src/main.o
+                0x00000000080006f4                StartTask3
  .text.StartTask4
                 0x0000000008000728       0x10 ./Core/Src/main.o
                 0x0000000008000728                StartTask4

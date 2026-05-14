@@ -451,10 +451,10 @@ int main(void)
  800052c:	080006b5 	.word	0x080006b5
  8000530:	2000007c 	.word	0x2000007c
  8000534:	08004be4 	.word	0x08004be4
- 8000538:	080006e9 	.word	0x080006e9
+ 8000538:	080006d5 	.word	0x080006d5
  800053c:	20000080 	.word	0x20000080
  8000540:	08004c08 	.word	0x08004c08
- 8000544:	08000709 	.word	0x08000709
+ 8000544:	080006f5 	.word	0x080006f5
  8000548:	20000084 	.word	0x20000084
  800054c:	08004c2c 	.word	0x08004c2c
  8000550:	08000729 	.word	0x08000729
@@ -689,86 +689,86 @@ static void MX_GPIO_Init(void)
 void StartTask1(void *argument)
 {
  80006b4:	b580      	push	{r7, lr}
- 80006b6:	b084      	sub	sp, #16
+ 80006b6:	b082      	sub	sp, #8
  80006b8:	af00      	add	r7, sp, #0
  80006ba:	6078      	str	r0, [r7, #4]
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
-	  volatile uint32_t wait = 50000000;
- 80006bc:	4b08      	ldr	r3, [pc, #32]	; (80006e0 <StartTask1+0x2c>)
- 80006be:	60fb      	str	r3, [r7, #12]
 	  HAL_GPIO_TogglePin(blueLED_GPIO_Port, blueLED_Pin);
- 80006c0:	f44f 4100 	mov.w	r1, #32768	; 0x8000
- 80006c4:	4807      	ldr	r0, [pc, #28]	; (80006e4 <StartTask1+0x30>)
- 80006c6:	f000 fc2c 	bl	8000f22 <HAL_GPIO_TogglePin>
+ 80006bc:	f44f 4100 	mov.w	r1, #32768	; 0x8000
+ 80006c0:	4803      	ldr	r0, [pc, #12]	; (80006d0 <StartTask1+0x1c>)
+ 80006c2:	f000 fc2e 	bl	8000f22 <HAL_GPIO_TogglePin>
 	  osDelay(1000);
- 80006ca:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
- 80006ce:	f001 fcc7 	bl	8002060 <osDelay>
-	  while(wait--);
- 80006d2:	bf00      	nop
- 80006d4:	68fb      	ldr	r3, [r7, #12]
- 80006d6:	1e5a      	subs	r2, r3, #1
- 80006d8:	60fa      	str	r2, [r7, #12]
- 80006da:	2b00      	cmp	r3, #0
- 80006dc:	d1fa      	bne.n	80006d4 <StartTask1+0x20>
-  {
- 80006de:	e7ed      	b.n	80006bc <StartTask1+0x8>
- 80006e0:	02faf080 	.word	0x02faf080
- 80006e4:	40020c00 	.word	0x40020c00
+ 80006c6:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
+ 80006ca:	f001 fcc9 	bl	8002060 <osDelay>
+	  HAL_GPIO_TogglePin(blueLED_GPIO_Port, blueLED_Pin);
+ 80006ce:	e7f5      	b.n	80006bc <StartTask1+0x8>
+ 80006d0:	40020c00 	.word	0x40020c00
 
-080006e8 <StartTask2>:
+080006d4 <StartTask2>:
 * @param argument: Not used
 * @retval None
 */
 /* USER CODE END Header_StartTask2 */
 void StartTask2(void *argument)
 {
- 80006e8:	b580      	push	{r7, lr}
- 80006ea:	b082      	sub	sp, #8
- 80006ec:	af00      	add	r7, sp, #0
- 80006ee:	6078      	str	r0, [r7, #4]
+ 80006d4:	b580      	push	{r7, lr}
+ 80006d6:	b082      	sub	sp, #8
+ 80006d8:	af00      	add	r7, sp, #0
+ 80006da:	6078      	str	r0, [r7, #4]
   /* USER CODE BEGIN StartTask2 */
   /* Infinite loop */
   for(;;)
   {
 	  HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
- 80006f0:	f44f 4180 	mov.w	r1, #16384	; 0x4000
- 80006f4:	4803      	ldr	r0, [pc, #12]	; (8000704 <StartTask2+0x1c>)
- 80006f6:	f000 fc14 	bl	8000f22 <HAL_GPIO_TogglePin>
+ 80006dc:	f44f 4180 	mov.w	r1, #16384	; 0x4000
+ 80006e0:	4803      	ldr	r0, [pc, #12]	; (80006f0 <StartTask2+0x1c>)
+ 80006e2:	f000 fc1e 	bl	8000f22 <HAL_GPIO_TogglePin>
 	  osDelay(500);
- 80006fa:	f44f 70fa 	mov.w	r0, #500	; 0x1f4
- 80006fe:	f001 fcaf 	bl	8002060 <osDelay>
+ 80006e6:	f44f 70fa 	mov.w	r0, #500	; 0x1f4
+ 80006ea:	f001 fcb9 	bl	8002060 <osDelay>
 	  HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
- 8000702:	e7f5      	b.n	80006f0 <StartTask2+0x8>
- 8000704:	40020c00 	.word	0x40020c00
+ 80006ee:	e7f5      	b.n	80006dc <StartTask2+0x8>
+ 80006f0:	40020c00 	.word	0x40020c00
 
-08000708 <StartTask3>:
+080006f4 <StartTask3>:
 * @param argument: Not used
 * @retval None
 */
 /* USER CODE END Header_StartTask3 */
 void StartTask3(void *argument)
 {
- 8000708:	b580      	push	{r7, lr}
- 800070a:	b082      	sub	sp, #8
- 800070c:	af00      	add	r7, sp, #0
- 800070e:	6078      	str	r0, [r7, #4]
+ 80006f4:	b580      	push	{r7, lr}
+ 80006f6:	b084      	sub	sp, #16
+ 80006f8:	af00      	add	r7, sp, #0
+ 80006fa:	6078      	str	r0, [r7, #4]
   /* USER CODE BEGIN StartTask3 */
   /* Infinite loop */
   for(;;)
   {
+	  volatile uint32_t wait = 50000000;
+ 80006fc:	4b08      	ldr	r3, [pc, #32]	; (8000720 <StartTask3+0x2c>)
+ 80006fe:	60fb      	str	r3, [r7, #12]
 	  HAL_GPIO_TogglePin(orangeLED_GPIO_Port, orangeLED_Pin);
- 8000710:	f44f 5100 	mov.w	r1, #8192	; 0x2000
- 8000714:	4803      	ldr	r0, [pc, #12]	; (8000724 <StartTask3+0x1c>)
- 8000716:	f000 fc04 	bl	8000f22 <HAL_GPIO_TogglePin>
+ 8000700:	f44f 5100 	mov.w	r1, #8192	; 0x2000
+ 8000704:	4807      	ldr	r0, [pc, #28]	; (8000724 <StartTask3+0x30>)
+ 8000706:	f000 fc0c 	bl	8000f22 <HAL_GPIO_TogglePin>
 	  osDelay(200);
- 800071a:	20c8      	movs	r0, #200	; 0xc8
- 800071c:	f001 fca0 	bl	8002060 <osDelay>
-	  HAL_GPIO_TogglePin(orangeLED_GPIO_Port, orangeLED_Pin);
- 8000720:	e7f6      	b.n	8000710 <StartTask3+0x8>
- 8000722:	bf00      	nop
+ 800070a:	20c8      	movs	r0, #200	; 0xc8
+ 800070c:	f001 fca8 	bl	8002060 <osDelay>
+	  while(wait--);
+ 8000710:	bf00      	nop
+ 8000712:	68fb      	ldr	r3, [r7, #12]
+ 8000714:	1e5a      	subs	r2, r3, #1
+ 8000716:	60fa      	str	r2, [r7, #12]
+ 8000718:	2b00      	cmp	r3, #0
+ 800071a:	d1fa      	bne.n	8000712 <StartTask3+0x1e>
+  {
+ 800071c:	e7ee      	b.n	80006fc <StartTask3+0x8>
+ 800071e:	bf00      	nop
+ 8000720:	02faf080 	.word	0x02faf080
  8000724:	40020c00 	.word	0x40020c00
 
 08000728 <StartTask4>:
