@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,7 +87,15 @@ void StartTask4(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int _write(int file, char *ptr, int len)
+{
+  int i;
+  for (i = 0; i < len; i++)
+  {
+    ITM_SendChar((*ptr++));
+  }
+  return len;
+}
 /* USER CODE END 0 */
 
 /**
@@ -290,6 +298,7 @@ void StartTask2(void *argument)
   {
 	  HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
 	  osDelay(500);
+	  printf("Hello World from SWO!\n");
   }
   /* USER CODE END StartTask2 */
 }
@@ -332,6 +341,7 @@ void StartTask4(void *argument)
     osThreadSuspend(Task3Handle);
     osDelay(1000);
     osThreadResume(Task3Handle);
+    //osThreadTerminate(Task3Handle);
   }
   /* USER CODE END StartTask4 */
 }
