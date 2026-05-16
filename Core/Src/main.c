@@ -41,31 +41,31 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-/* Definitions for Task1 */
-osThreadId_t Task1Handle;
-const osThreadAttr_t Task1_attributes = {
-  .name = "Task1",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for Task2 */
-osThreadId_t Task2Handle;
-const osThreadAttr_t Task2_attributes = {
-  .name = "Task2",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-/* Definitions for rxTask */
-osThreadId_t rxTaskHandle;
-const osThreadAttr_t rxTask_attributes = {
-  .name = "rxTask",
+/* Definitions for LPT */
+osThreadId_t LPTHandle;
+const osThreadAttr_t LPT_attributes = {
+  .name = "LPT",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal1,
+  .priority = (osPriority_t) osPriorityBelowNormal,
 };
-/* Definitions for msgQueue */
-osMessageQueueId_t msgQueueHandle;
-const osMessageQueueAttr_t msgQueue_attributes = {
-  .name = "msgQueue"
+/* Definitions for MPT */
+osThreadId_t MPTHandle;
+const osThreadAttr_t MPT_attributes = {
+  .name = "MPT",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for HPT */
+osThreadId_t HPTHandle;
+const osThreadAttr_t HPT_attributes = {
+  .name = "HPT",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
+/* Definitions for myBinarySem01 */
+osSemaphoreId_t myBinarySem01Handle;
+const osSemaphoreAttr_t myBinarySem01_attributes = {
+  .name = "myBinarySem01"
 };
 /* USER CODE BEGIN PV */
 
@@ -74,9 +74,9 @@ const osMessageQueueAttr_t msgQueue_attributes = {
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void StartTask1(void *argument);
-void StartTask2(void *argument);
-void StartrxTask(void *argument);
+void StartLPT(void *argument);
+void StartMPT(void *argument);
+void StartHPT(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -84,10 +84,6 @@ void StartrxTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-typedef struct{
-	uint8_t event_id;
-	uint32_t timestamp;
-}msgQueue_t;
 
 int _write(int file, char *ptr, int len)
 {
@@ -139,6 +135,10 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* creation of myBinarySem01 */
+  myBinarySem01Handle = osSemaphoreNew(1, 1, &myBinarySem01_attributes);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -147,23 +147,19 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
-  /* Create the queue(s) */
-  /* creation of msgQueue */
-  msgQueueHandle = osMessageQueueNew (10, sizeof(msgQueue_t), &msgQueue_attributes);
-
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of Task1 */
-  Task1Handle = osThreadNew(StartTask1, NULL, &Task1_attributes);
+  /* creation of LPT */
+  LPTHandle = osThreadNew(StartLPT, NULL, &LPT_attributes);
 
-  /* creation of Task2 */
-  Task2Handle = osThreadNew(StartTask2, NULL, &Task2_attributes);
+  /* creation of MPT */
+  MPTHandle = osThreadNew(StartMPT, NULL, &MPT_attributes);
 
-  /* creation of rxTask */
-  rxTaskHandle = osThreadNew(StartrxTask, NULL, &rxTask_attributes);
+  /* creation of HPT */
+  HPTHandle = osThreadNew(StartHPT, NULL, &HPT_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -241,18 +237,11 @@ void SystemClock_Config(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
-
-  /*Configure GPIO pin : btnBlue_Pin */
-  GPIO_InitStruct.Pin = btnBlue_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(btnBlue_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -262,75 +251,73 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartTask1 */
+/* USER CODE BEGIN Header_StartLPT */
 /**
-  * @brief  Function implementing the Task1 thread.
+  * @brief  Function implementing the LPT thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartTask1 */
-void StartTask1(void *argument)
+/* USER CODE END Header_StartLPT */
+void StartLPT(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	msgQueue_t msg;
+	uint32_t wait;
   /* Infinite loop */
   for(;;)
   {
-	  if(HAL_GPIO_ReadPin(btnBlue_GPIO_Port, btnBlue_Pin) == 1)
-	  {
-		  msg.event_id = 0x01;
-		  msg.timestamp = HAL_GetTick();
-		  osMessageQueuePut(msgQueueHandle, &msg, 0, 0);
-		  osDelay(200); // debounce
-	  }
-	  osDelay(20);
+	  printf("Entered LPT\n\n");
+	  osSemaphoreAcquire(myBinarySem01Handle, osWaitForever);
+	  printf("LPT using resource\n\n");
+	  wait = 50000000;
+	  while(wait--);
+	  printf("LPT Finished, release semaphore\n\n");
+	  osSemaphoreRelease(myBinarySem01Handle);
+	  printf("LPT going to sleep\n\n");
+	  osDelay(500);
   }
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_StartTask2 */
+/* USER CODE BEGIN Header_StartMPT */
 /**
-* @brief Function implementing the Task2 thread.
+* @brief Function implementing the MPT thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask2 */
-void StartTask2(void *argument)
+/* USER CODE END Header_StartMPT */
+void StartMPT(void *argument)
 {
-  /* USER CODE BEGIN StartTask2 */
-	msgQueue_t msg;
+  /* USER CODE BEGIN StartMPT */
   /* Infinite loop */
   for(;;)
   {
-	  msg.event_id = 0x02;
-	  msg.timestamp = HAL_GetTick()/1000; // in seconds
-	  osMessageQueuePut(msgQueueHandle, &msg, 0, 0);
-	  osDelay(1000); // debounce
+	  printf("Entered MPT\n\n");
+	  osSemaphoreAcquire(myBinarySem01Handle, osWaitForever);
+	  printf("MPT Finished, release semaphore\n\n");
+	  osSemaphoreRelease(myBinarySem01Handle);
+	  printf("MPT going to sleep\n\n");
+	  osDelay(200);
   }
-  /* USER CODE END StartTask2 */
+  /* USER CODE END StartMPT */
 }
 
-/* USER CODE BEGIN Header_StartrxTask */
+/* USER CODE BEGIN Header_StartHPT */
 /**
-* @brief Function implementing the rxTask thread.
+* @brief Function implementing the HPT thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartrxTask */
-void StartrxTask(void *argument)
+/* USER CODE END Header_StartHPT */
+void StartHPT(void *argument)
 {
-  /* USER CODE BEGIN StartrxTask */
-	msgQueue_t msg;
+  /* USER CODE BEGIN StartHPT */
   /* Infinite loop */
   for(;;)
   {
-    if(osMessageQueueGet(msgQueueHandle, &msg, 0, 0) == osOK)
-    {
-    	printf("Event ID:%d, Timestamp:%lu\n", msg.event_id, msg.timestamp);
-    }
-    osDelay(1);
+	  printf("Entered HPT\n\n");
+	  osDelay(1000);
   }
-  /* USER CODE END StartrxTask */
+  /* USER CODE END StartHPT */
 }
 
 /**
