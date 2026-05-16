@@ -46,28 +46,26 @@ osThreadId_t Task1Handle;
 const osThreadAttr_t Task1_attributes = {
   .name = "Task1",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for Task2 */
 osThreadId_t Task2Handle;
 const osThreadAttr_t Task2_attributes = {
   .name = "Task2",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
-};
-/* Definitions for Task3 */
-osThreadId_t Task3Handle;
-const osThreadAttr_t Task3_attributes = {
-  .name = "Task3",
-  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for Task4 */
-osThreadId_t Task4Handle;
-const osThreadAttr_t Task4_attributes = {
-  .name = "Task4",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
+/* Definitions for rxTask */
+osThreadId_t rxTaskHandle;
+const osThreadAttr_t rxTask_attributes = {
+  .name = "rxTask",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityNormal1,
+};
+/* Definitions for msgQueue */
+osMessageQueueId_t msgQueueHandle;
+const osMessageQueueAttr_t msgQueue_attributes = {
+  .name = "msgQueue"
 };
 /* USER CODE BEGIN PV */
 
@@ -78,8 +76,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 void StartTask1(void *argument);
 void StartTask2(void *argument);
-void StartTask3(void *argument);
-void StartTask4(void *argument);
+void StartrxTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -87,6 +84,11 @@ void StartTask4(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+typedef struct{
+	uint8_t event_id;
+	uint32_t timestamp;
+}msgQueue_t;
+
 int _write(int file, char *ptr, int len)
 {
   int i;
@@ -145,6 +147,10 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of msgQueue */
+  msgQueueHandle = osMessageQueueNew (10, sizeof(msgQueue_t), &msgQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -156,11 +162,8 @@ int main(void)
   /* creation of Task2 */
   Task2Handle = osThreadNew(StartTask2, NULL, &Task2_attributes);
 
-  /* creation of Task3 */
-  Task3Handle = osThreadNew(StartTask3, NULL, &Task3_attributes);
-
-  /* creation of Task4 */
-  Task4Handle = osThreadNew(StartTask4, NULL, &Task4_attributes);
+  /* creation of rxTask */
+  rxTaskHandle = osThreadNew(StartrxTask, NULL, &rxTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -243,18 +246,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, orangeLED_Pin|redLED_Pin|blueLED_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : orangeLED_Pin redLED_Pin blueLED_Pin */
-  GPIO_InitStruct.Pin = orangeLED_Pin|redLED_Pin|blueLED_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pin : btnBlue_Pin */
+  GPIO_InitStruct.Pin = btnBlue_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  HAL_GPIO_Init(btnBlue_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -274,11 +272,18 @@ static void MX_GPIO_Init(void)
 void StartTask1(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	msgQueue_t msg;
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(blueLED_GPIO_Port, blueLED_Pin);
-	  osDelay(1000);
+	  if(HAL_GPIO_ReadPin(btnBlue_GPIO_Port, btnBlue_Pin) == 1)
+	  {
+		  msg.event_id = 0x01;
+		  msg.timestamp = HAL_GetTick();
+		  osMessageQueuePut(msgQueueHandle, &msg, 0, 0);
+		  osDelay(200); // debounce
+	  }
+	  osDelay(20);
   }
   /* USER CODE END 5 */
 }
@@ -293,57 +298,39 @@ void StartTask1(void *argument)
 void StartTask2(void *argument)
 {
   /* USER CODE BEGIN StartTask2 */
+	msgQueue_t msg;
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(redLED_GPIO_Port, redLED_Pin);
-	  osDelay(500);
-	  printf("Hello World from SWO!\n");
+	  msg.event_id = 0x02;
+	  msg.timestamp = HAL_GetTick()/1000; // in seconds
+	  osMessageQueuePut(msgQueueHandle, &msg, 0, 0);
+	  osDelay(1000); // debounce
   }
   /* USER CODE END StartTask2 */
 }
 
-/* USER CODE BEGIN Header_StartTask3 */
+/* USER CODE BEGIN Header_StartrxTask */
 /**
-* @brief Function implementing the Task3 thread.
+* @brief Function implementing the rxTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask3 */
-void StartTask3(void *argument)
+/* USER CODE END Header_StartrxTask */
+void StartrxTask(void *argument)
 {
-  /* USER CODE BEGIN StartTask3 */
+  /* USER CODE BEGIN StartrxTask */
+	msgQueue_t msg;
   /* Infinite loop */
   for(;;)
   {
-	  volatile uint32_t wait = 50000000;
-	  HAL_GPIO_TogglePin(orangeLED_GPIO_Port, orangeLED_Pin);
-	  osDelay(200);
-	  while(wait--);
+    if(osMessageQueueGet(msgQueueHandle, &msg, 0, 0) == osOK)
+    {
+    	printf("Event ID:%d, Timestamp:%lu\n", msg.event_id, msg.timestamp);
+    }
+    osDelay(1);
   }
-  /* USER CODE END StartTask3 */
-}
-
-/* USER CODE BEGIN Header_StartTask4 */
-/**
-* @brief Function implementing the Task4 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask4 */
-void StartTask4(void *argument)
-{
-  /* USER CODE BEGIN StartTask4 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1000);
-    osThreadSuspend(Task3Handle);
-    osDelay(1000);
-    osThreadResume(Task3Handle);
-    //osThreadTerminate(Task3Handle);
-  }
-  /* USER CODE END StartTask4 */
+  /* USER CODE END StartrxTask */
 }
 
 /**
