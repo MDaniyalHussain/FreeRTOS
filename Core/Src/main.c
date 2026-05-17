@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,10 +63,17 @@ const osThreadAttr_t HPT_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
 };
-/* Definitions for myBinarySem01 */
-osSemaphoreId_t myBinarySem01Handle;
-const osSemaphoreAttr_t myBinarySem01_attributes = {
-  .name = "myBinarySem01"
+/* Definitions for VHPT */
+osThreadId_t VHPTHandle;
+const osThreadAttr_t VHPT_attributes = {
+  .name = "VHPT",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for myCountingSem01 */
+osSemaphoreId_t myCountingSem01Handle;
+const osSemaphoreAttr_t myCountingSem01_attributes = {
+  .name = "myCountingSem01"
 };
 /* USER CODE BEGIN PV */
 
@@ -77,6 +85,7 @@ static void MX_GPIO_Init(void);
 void StartLPT(void *argument);
 void StartMPT(void *argument);
 void StartHPT(void *argument);
+void StartVHPT(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -136,8 +145,8 @@ int main(void)
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
-  /* creation of myBinarySem01 */
-  myBinarySem01Handle = osSemaphoreNew(1, 1, &myBinarySem01_attributes);
+  /* creation of myCountingSem01 */
+  myCountingSem01Handle = osSemaphoreNew(3, 3, &myCountingSem01_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -161,6 +170,9 @@ int main(void)
   /* creation of HPT */
   HPTHandle = osThreadNew(StartHPT, NULL, &HPT_attributes);
 
+  /* creation of VHPT */
+  VHPTHandle = osThreadNew(StartVHPT, NULL, &VHPT_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -169,8 +181,10 @@ int main(void)
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
+  printf("Process Start!");
   /* Start scheduler */
   osKernelStart();
+
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
@@ -248,7 +262,36 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+int resource[3] = {111, 222, 333};
+char *resourceOwner[3] = {"Free", "Free", "Free"};
 
+int getResource(char *taskName)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (strcmp(resourceOwner[i], "Free") == 0)
+        {
+            resourceOwner[i] = taskName;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void releaseResource(int id)
+{
+    resourceOwner[id] = "Free";
+}
+
+void printResourceTable(void)
+{
+    printf("\nResource Table:\n");
+    for (int i = 0; i < 3; i++)
+    {
+        printf("Resource %d -> %s\n", resource[i], resourceOwner[i]);
+    }
+    printf("\n");
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartLPT */
@@ -261,20 +304,21 @@ static void MX_GPIO_Init(void)
 void StartLPT(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	uint32_t wait;
+	int resID;
   /* Infinite loop */
-  for(;;)
-  {
-	  printf("Entered LPT\n\n");
-	  osSemaphoreAcquire(myBinarySem01Handle, osWaitForever);
-	  printf("LPT using resource\n\n");
-	  wait = 50000000;
-	  while(wait--);
-	  printf("LPT Finished, release semaphore\n\n");
-	  osSemaphoreRelease(myBinarySem01Handle);
-	  printf("LPT going to sleep\n\n");
-	  osDelay(500);
-  }
+    for(;;)
+    {
+        printf("LPT waiting for resource\n");
+        osSemaphoreAcquire(myCountingSem01Handle, osWaitForever);
+        resID = getResource("LPT");
+        printf("LPT accessing resource %d\n", resource[resID]);
+        printResourceTable();
+        osDelay(2000);
+        printf("LPT finished using resource\n");
+        releaseResource(resID);
+        osSemaphoreRelease(myCountingSem01Handle);
+        osDelay(1000);
+    }
   /* USER CODE END 5 */
 }
 
@@ -288,16 +332,22 @@ void StartLPT(void *argument)
 void StartMPT(void *argument)
 {
   /* USER CODE BEGIN StartMPT */
-  /* Infinite loop */
-  for(;;)
-  {
-	  printf("Entered MPT\n\n");
-	  osSemaphoreAcquire(myBinarySem01Handle, osWaitForever);
-	  printf("MPT Finished, release semaphore\n\n");
-	  osSemaphoreRelease(myBinarySem01Handle);
-	  printf("MPT going to sleep\n\n");
-	  osDelay(200);
-  }
+	int resID;
+	/* Infinite loop */
+
+    for(;;)
+    {
+        printf("MPT waiting for resource\n");
+        osSemaphoreAcquire(myCountingSem01Handle, osWaitForever);
+        resID = getResource("MPT");
+        printf("MPT accessing resource %d\n", resource[resID]);
+        printResourceTable();
+        osDelay(2000);
+        printf("MPT finished using resource\n");
+        releaseResource(resID);
+        osSemaphoreRelease(myCountingSem01Handle);
+        osDelay(1000);
+    }
   /* USER CODE END StartMPT */
 }
 
@@ -312,12 +362,51 @@ void StartHPT(void *argument)
 {
   /* USER CODE BEGIN StartHPT */
   /* Infinite loop */
-  for(;;)
-  {
-	  printf("Entered HPT\n\n");
-	  osDelay(1000);
-  }
+    int resID;
+
+    for(;;)
+    {
+        printf("HPT waiting for resource\n");
+        osSemaphoreAcquire(myCountingSem01Handle, osWaitForever);
+        resID = getResource("HPT");
+        printf("HPT accessing resource %d\n", resource[resID]);
+        printResourceTable();
+        osDelay(2000);
+        printf("HPT finished using resource\n");
+        releaseResource(resID);
+        osSemaphoreRelease(myCountingSem01Handle);
+        osDelay(1000);
+    }
   /* USER CODE END StartHPT */
+}
+
+/* USER CODE BEGIN Header_StartVHPT */
+/**
+* @brief Function implementing the VHPT thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartVHPT */
+void StartVHPT(void *argument)
+{
+  /* USER CODE BEGIN StartVHPT */
+  /* Infinite loop */
+    int resID;
+
+    for(;;)
+    {
+        printf("VHPT waiting for resource\n");
+        osSemaphoreAcquire(myCountingSem01Handle, osWaitForever);
+        resID = getResource("VHPT");
+        printf("VHPT accessing resource %d\n", resource[resID]);
+        printResourceTable();
+        osDelay(2000);
+        printf("VHPT finished using resource\n");
+        releaseResource(resID);
+        osSemaphoreRelease(myCountingSem01Handle);
+        osDelay(1000);
+    }
+  /* USER CODE END StartVHPT */
 }
 
 /**
